@@ -14,9 +14,13 @@ export const GetQueryString = function (name) {
 }
 
 export const checkLogin = function () {
-  return !!localStorage['x-security-token']
+  return !!localStorage['x-security-token'] || !!VueCookie.get('x-security-token')
 }
 
-export const isIphoneX = function(){
-  return /iphone/gi.test(navigator.userAgent) && (screen.height == 812 && screen.width == 375)
-};
+export const isIphoneX = function () {
+  return /iphone/gi.test(navigator.userAgent) && (screen.height === 812 && screen.width === 375)
+}
+
+export const live800 = function () {
+  window.location.href = 'http://chat8.live800.com/live800/chatClient/chatbox.jsp?companyID=901843&configID=152182&jid=8192606623'
+}

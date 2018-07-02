@@ -1,7 +1,7 @@
 <template>
-<div class="topHeader">
-  <x-header :title="$route.name" :left-options="{backText: '', preventGoBack:true}" @on-click-back="backFn">
-    <router-link to="/" slot="right" class="home_icon"></router-link>
+<div class="topHeader" v-if="true">
+  <x-header :title="this.$route.meta.title" :left-options="{backText: '', preventGoBack:true}" @on-click-back="backFn">
+    <router-link v-if="showHouse" to="/" slot="right" class="home-icon"></router-link>
   </x-header>
 </div>
 </template>
@@ -11,9 +11,12 @@ import {
   XHeader
 } from 'vux'
 
+import {isWeiXin} from '@/utils/common'
+
 export default {
   props: {
-    back: String
+    back: String,
+    showHouse: {default:true}
   },
   components: {
     XHeader
@@ -27,12 +30,10 @@ export default {
       }
     }
   },
-  mounted(){
-    console.log(this.backPath);
-  },
   data () {
     return {
-      backPath:this.back
+      backPath:this.back,
+      isWeiXin:isWeiXin
     }
   }
 }
@@ -41,4 +42,11 @@ export default {
 <style lang="less" scoped>
 .topHeader .vux-header{ background-color: #fff; border-bottom: 1PX solid #f2f3f4}
 .topHeader /deep/ .vux-header .vux-header-title{ color:#5f5f5f;}
+.home-icon{
+  display:inline-block;
+  background:url(./images/index.png) no-repeat;
+  background-size:36px 36px;
+  width:36px;
+  height:35px;
+}
 </style>

@@ -21,7 +21,7 @@ if (isWeiXin) {
       wx.showAllNonBaseMenuItem()
     }
 
-    wx.hideAllNonBaseMenuItem()
+    //wx.hideAllNonBaseMenuItem()
   })
 } else {
   console.log('非微信浏览器，微信sdk不运行')

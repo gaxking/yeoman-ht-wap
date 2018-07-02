@@ -1,4 +1,4 @@
-require('./check-versions')()
+require('../build/check-versions')()
 var fs = require('fs')
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'dev'
@@ -14,8 +14,8 @@ var path = require('path')
 var express = require('express')
 var proxyMiddleware = require('http-proxy-middleware')
 var webpackConfig = process.env.NODE_ENV === 'production'
-  ? require('./webpack.prod.conf')
-  : require('./webpack.dev.conf')
+  ? require('../build/webpack.prod.conf')
+  : require('../build/webpack.dev.conf')
 // default port where dev server listens for incoming traffic
 var port = process.env.PORT || config.port
 
@@ -23,19 +23,7 @@ var port = process.env.PORT || config.port
 // https://github.com/chimurai/http-proxy-middleware
 var proxyTable = config.proxyTable
 var request = require('request')
-var session = require('express-session')
 var cookieParser = require('cookie-parser')
-
-// 微信登录相关
-var redirect_url
-switch (process.env.HT_ENV) {
-  case 'dev':
-    redirect_url = 'https://ht-jj-h5-dev.htmimi.com'
-    break
-  case 'test':
-    redirect_url = 'https://ht-jj-h5-test.htmimi.com'
-    break
-}
 
 var appid = '<%= appid %>'
 var appsecret = '<%= appsecret %>'
@@ -45,13 +33,8 @@ var app = express()
 // session相关
 var identityKey = 'skey'
 app.use(cookieParser())
-app.use(session({
-  resave: true,
-  secret: 'boyebolomi',
-  name: 'nID',
-  saveUninitialized: true,
-  cookie: {maxAge: 60 * 60 * 24 * 365 * 1000}
-}))
+
+var cookiesConfig = {maxAge:600000, path:'/'}
 
 if (!isProd) {
   var opn = require('opn')
@@ -113,17 +96,41 @@ if (!isProd) {
   app.get(/.*/, ssr)
 }
 
+
 // proxy api requests
 Object.keys(proxyTable).forEach(function (context) {
   var options = proxyTable[context]
   if (typeof options === 'string') {
     options = { target: options }
   }
+
+  options.onProxyRes = (proxyRes, req, res) => {
+	const format = req.headers['x-format']
+	const mock = req.headers['x-mock']
+
+		  var body = new Buffer('')
+		  proxyRes.on('data', function (data) {
+			  body = Buffer.concat([body, data])
+		  })
+		  proxyRes.on('end', function () {
+			  body = body.toString()
+			  console.log('res from proxied server:', proxyRes.req.path)
+
+			  for (const [key, value] of Object.entries(proxyRes.headers)) {
+				  res.setHeader(key, value);
+			  }
+
+			  res.end(body)
+		  })
+  }
+
+  //允许修改返回值
+  options['selfHandleResponse'] = true
   app.use(proxyMiddleware(options.filter || context, options))
 })
 
 var staticPath = path.posix.join(config.assetsPublicPath, config.assetsSubDirectory)
-//app.use('/static', express.static(__dirname + '../static'))
+// app.use('/static', express.static(__dirname + '../static'))
 
 var server = app.listen(port, function (error) {
   if (error) {
@@ -140,15 +147,15 @@ module.exports = {
   }
 }
 
-function getWxAccess (req) {
+function getWxAccess (req, res) {
   return new Promise(function (resolve, reject) {
     var url = 'https://api.weixin.qq.com/sns/oauth2/access_token?appid=' + appid + '&secret=' + appsecret + '&code=' + req.query.code + '&grant_type=authorization_code'
 
     request(url, function (error, response, data) {
-      console.log(data)
       data = JSON.parse(data)
-      req.session.access_token = data.access_token
-      req.session.openid = data.openid
+      //res.cookie('access_token', data.access_token, cookiesConfig)
+      //res.cookie('openid', data.openid, cookiesConfig)
+      console.log("request", data)
 
       var url = 'https://api.weixin.qq.com/sns/userinfo?access_token=' + data.access_token + '&openid=' + data.openid + '&lang=zh_CN'
       request(url, function (error, response, data) {
@@ -177,16 +184,16 @@ function ssr (req, res, next) {
   }
 
   if (config.wxLogin && isWeiXin) {
-    if (!req.session.access_token || !req.session.openid || !req.session.wxInfo) {
+    if (!req.cookies.unionid) {
       // const fullURL = req.protocol + '://' + req.host + ":"+ port + req.originalUrl
-      let fullURL = redirect_url + req.originalUrl
+      let fullURL = req.protocol + '://' + req.get('host') + req.url
       let authorize_url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=' + appid + '&redirect_uri=' + encodeURIComponent(fullURL) + '&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect'
 
       if (req.query.code) {
-        getWxAccess(req).then(info => {
+        getWxAccess(req, res).then(info => {
           console.log(info)
           info = JSON.parse(info)
-          req.session.wxInfo = info
+          res.cookie('unionid', info.unionid, cookiesConfig)
           res.redirect(302, fullURL.replace(/\?.*$/, ''))
         })
       } else {
@@ -219,35 +226,23 @@ function ssr (req, res, next) {
 }`)
         }
 
-        if (config.wxLogin && isWeiXin) {
-          let wxInfo = {
-            nickname: req.session.wxInfo.nickname,
-            headimgurl: req.session.wxInfo.headimgurl,
-            openid: req.session.wxInfo.openid,
-            unionid: req.session.wxInfo.unionid,
-            sex: req.session.wxInfo.sex
-          }
-
-          data = data.replace('</head>', '</head><script>window.wxInfo=' + JSON.stringify(wxInfo) + '</script>')
-        }
-
         /*
-          req.session.wxInfo = JSON.parse('{"openid":"oE7oAs5quk_Ab_zt5rkS8f2E0XtI","nickname":"GaX_","sex":1,"language":"zh_CN","city":"广州","province":"广东","country":"中国","headimgurl":"http:\/\/thirdwx.qlogo.cn\/mmopen\/vi_32\/Gej1lNReb2dJFUQQvGOdIuScCGYgbVhGp5G4ZvknWicKF3CfVU0TUianPe7Qian77GJ9fSnQtfID99A3qeibI5rO0w\/132","privilege":[]}');
+		  req.session.wxInfo = JSON.parse('{"openid":"oE7oAs5quk_Ab_zt5rkS8f2E0XtI","nickname":"GaX_","sex":1,"language":"zh_CN","city":"广州","province":"广东","country":"中国","headimgurl":"http:\/\/thirdwx.qlogo.cn\/mmopen\/vi_32\/Gej1lNReb2dJFUQQvGOdIuScCGYgbVhGp5G4ZvknWicKF3CfVU0TUianPe7Qian77GJ9fSnQtfID99A3qeibI5rO0w\/132","privilege":[]}');
 
-          let wxInfo = {
-            nickname:req.session.wxInfo.nickname,
-            headimgurl:req.session.wxInfo.headimgurl,
-            openid:req.session.wxInfo.openid,
-            unionid:req.session.wxInfo.unionid,
-            sex:req.session.wxInfo.sex,
-          };
+		  let wxInfo = {
+			nickname:req.session.wxInfo.nickname,
+			headimgurl:req.session.wxInfo.headimgurl,
+			openid:req.session.wxInfo.openid,
+			unionid:req.session.wxInfo.unionid,
+			sex:req.session.wxInfo.sex,
+		  };
 
-          data = data.replace('</head>', "</head><script>window.wxInfo="+ JSON.stringify(wxInfo)+"</script>")
-        */
+		  data = data.replace('</head>', "</head><script>window.wxInfo="+ JSON.stringify(wxInfo)+"</script>")
+		  */
 
         // console.log(data.toString());
         res.send(data)
-      }
+	  }
     })
   }
 
@@ -265,4 +260,3 @@ function ssr (req, res, next) {
     return false
   }
 }
-

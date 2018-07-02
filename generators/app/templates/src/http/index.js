@@ -11,7 +11,7 @@ const tokenKey = 'x-security-token'
 let apiConfigBaseURL = '/proxy'
 let apiConfigOldBaseURL = '/oldProxy'
 
-/**
+  /**
    * 代理类 基于axios
    * @param options
    * @returns {HtProxy}
@@ -94,7 +94,7 @@ axios.interceptors.response.use(undefined, function axiosRetryInterceptor (err) 
   })
 })
 
-/**
+  /**
    * 初始化 x-client-traceId
    * @param userId
    * @param equipmentId
@@ -116,7 +116,7 @@ HtProxy.prototype.initClientTraceId = function (userId, equipmentId) {
   this.headers['x-client-traceId'] = [userId, now, equipmentId].join('_')
 }
 
-/**
+  /**
    * 获取json
    * @param url   需要访问的api地址
    * @param data  请求参数,需stringify后的json
@@ -125,9 +125,10 @@ HtProxy.prototype.initClientTraceId = function (userId, equipmentId) {
    */
 HtProxy.prototype.fetchJSON = function (url, data, config) {
   this.initClientTraceId()
+  config = {showLoading: true, includeApi:true, showError: true, ...config}
+
   this.configAxios(config)
 
-  config = config || {showLoading: true}
   let _this = this
   let aesDecrypt // aesDecrypt解密方法
 
@@ -153,13 +154,21 @@ HtProxy.prototype.fetchJSON = function (url, data, config) {
     let header = {}
     header['x-api-address'] = serviceAddress
     header['x-api-env'] = this.env || ''
-    header[tokenKey] = config.token || localStorage[tokenKey] ? localStorage[tokenKey] : ''
+
+    header[tokenKey] = config.token || VueCookie.get(tokenKey) || localStorage[tokenKey] || ''
 
     header['x-client-type'] = 'app'
     header['version'] = '1.0.0'
 
     if (!header[tokenKey]) {
       delete header[tokenKey]
+    }
+
+    if (config.format !== undefined) {
+      header['x-format'] = true
+    }
+    if (config.mock !== undefined) {
+      header['x-mock'] = true
     }
 
     return serviceFn.call(this, {headers: header})
@@ -196,12 +205,12 @@ HtProxy.prototype.fetchJSON = function (url, data, config) {
         const status = responseFilter(response, (message) => {
           if (typeof window !== 'undefined') {
             deleteCookies(tokenKey)
-            deleteCookies('userLoginNo')
           }
 
           return message || '未登录'
         })
         if (status !== true) {
+          response.message = status;
           return Promise.reject(response)
         }
 
@@ -242,26 +251,21 @@ HtProxy.prototype.fetchJSON = function (url, data, config) {
               e.message = '网络请求超时,请刷新后重试'
               e.callback = () => { location.reload() }
             }
-            AlertModule.show({
-              content: e.message,
-              onHide () {
-                // 在业务中暴漏回调方法
-                if (typeof e.callback === 'function') {
-                  e.callback()
+            if(config.showError){
+              AlertModule.show({
+                content: e.message,
+                onHide () {
+                  // 在业务中暴漏回调方法
+                  if (typeof e.callback === 'function') {
+                    e.callback()
+                  }
                 }
-              }
-            })
+              })
+            }
           } else {
             AlertModule.show({
               content: '服务器开小差了'
             })
-
-            // process.env.NODE_ENV !== 'release' && console.info(e)
-            // const mockData = mock(url)
-            // console.info(mockData)
-            // if (isDEV && mockData) {
-            //   return Promise.resolve(mockData)
-            // }
           }
         }
       }
@@ -270,7 +274,7 @@ HtProxy.prototype.fetchJSON = function (url, data, config) {
   }
 }
 
-/**
+  /**
    * 设置请求头
    * @param key
    * @param value
@@ -292,7 +296,7 @@ HtProxy.prototype.header = function (key, value) {
   return this
 }
 
-/**
+  /**
    * 设置属性
    * @param prop      属性名
    * @param value     属性值
