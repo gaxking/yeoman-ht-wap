@@ -3,7 +3,6 @@
 import Vue from 'vue'
 import App from './App'
 import * as route from './router/index'
-import store from './lib/animation/store/'
 import './utils/global'
 import 'lib-flexible'
 import wx from '@/lib/wxTools'
@@ -21,8 +20,6 @@ wx.setDefaultShareConf({
   imgUrl: location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/static/logo.png'
 })
 
-wx.hideAllNonBaseMenuItem()
-
 /* 过滤器 */
 Object.keys(customFilter).forEach(key => {
   Vue.filter(key, customFilter[key])
@@ -31,7 +28,7 @@ Object.keys(customFilter).forEach(key => {
 // 全局注册，方便在style上使用filter
 Vue.prototype.imgFormat = customFilter['imgFormat']
 
-Vue.use(VueLazyLoad, {preLoad:1})
+Vue.use(VueLazyLoad, { preLoad: 1 })
 
 const router = route['default']
 
@@ -64,16 +61,20 @@ router.afterEach(function (to, form) {
     window.document.title = '<%= title %>'
   }
 
+
+  let link = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + to.fullPath;
+
+  wx.refreshTicket(link)
+
   let shareObj = {
     title: window.document.title,
     desc: '',
-    link: location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + to.fullPath,
+    link: link,
     imgUrl: location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/static/logo.png'
   }
 
   wx.toFriend(shareObj)
   wx.toTimeLine(shareObj)
-  wx.hideAllNonBaseMenuItem()
 
   Loading.hide()
   // setWechatTitle(window.document.title)
@@ -82,6 +83,5 @@ router.afterEach(function (to, form) {
 /* eslint-disable no-new */
 new Vue({
   router,
-  store,
   render: h => h(App)
 }).$mount('#app-box')

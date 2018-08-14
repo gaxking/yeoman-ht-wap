@@ -12,6 +12,7 @@ if (isWeiXin) {
   }).then(function (_wx) {
     wx = _wx
 
+    wx.refreshTicket(config.refreshTicket || {url: location.href})
     wx.toFriend(config.toFriend || defaultShareObj)
     wx.toTimeLine(config.toFriend || defaultShareObj)
 
@@ -20,14 +21,19 @@ if (isWeiXin) {
     } else if (config.BaseMenuDisplay === 'show') {
       wx.showAllNonBaseMenuItem()
     }
-
-    //wx.hideAllNonBaseMenuItem()
   })
 } else {
   console.log('非微信浏览器，微信sdk不运行')
 }
 
+
 export default {
+  refreshTicket: function (url) {
+    config.refreshTicket = {url}
+    if (wx) {
+      wx.refreshTicket({url})
+    }
+  },
   setDefaultShareConf: function (opt) {
     defaultShareObj = opt
   },

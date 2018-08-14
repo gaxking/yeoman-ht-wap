@@ -31,17 +31,14 @@ var appsecret = '<%= appsecret %>'
 var app = express()
 
 // session相关
-var identityKey = 'skey'
 app.use(cookieParser())
+app.use(compression())
 
-var cookiesConfig = {maxAge:600000, path:'/'}
+var cookiesConfig = { maxAge: 30 * 24 * 3600 * 1000, path: '/' }
 
 if (!isProd) {
   var opn = require('opn')
   var webpack = require('webpack')
-
-  // automatically open browser, if not set will be false
-  var autoOpenBrowser = !!config.autoOpenBrowser
 
   var compiler = webpack(webpackConfig)
 
@@ -75,14 +72,6 @@ if (!isProd) {
   // enable hot-reload and state-preserving
   // compilation error display
   app.use(hotMiddleware)
-
-  // serve pure static assets
-  var uri = 'http://localhost:' + port
-
-  var _resolve
-  var readyPromise = new Promise(resolve => {
-    _resolve = resolve
-  })
 } else {
   app.use('/static', express.static(config.assetsRoot + '/static', {maxAge: 60 * 12 * 24 * 360 * 100}))
   // 微信域名验证用
@@ -104,6 +93,7 @@ Object.keys(proxyTable).forEach(function (context) {
     options = { target: options }
   }
 
+  /*
   options.onProxyRes = (proxyRes, req, res) => {
 	const format = req.headers['x-format']
 	const mock = req.headers['x-mock']
@@ -126,6 +116,7 @@ Object.keys(proxyTable).forEach(function (context) {
 
   //允许修改返回值
   options['selfHandleResponse'] = true
+  */
   app.use(proxyMiddleware(options.filter || context, options))
 })
 
@@ -155,7 +146,6 @@ function getWxAccess (req, res) {
       data = JSON.parse(data)
       //res.cookie('access_token', data.access_token, cookiesConfig)
       //res.cookie('openid', data.openid, cookiesConfig)
-      console.log("request", data)
 
       var url = 'https://api.weixin.qq.com/sns/userinfo?access_token=' + data.access_token + '&openid=' + data.openid + '&lang=zh_CN'
       request(url, function (error, response, data) {

@@ -1,9 +1,9 @@
 <template>
-<div id="app">
+<div id="app" v-bind:class="{'show-btn':showFooterBtn}">
   <!--<transition :name="'vux-pop-' + (direction === 'forward' ? 'in' : 'out')">-->
 
   <!--</transition>-->
-  <router-view v-if="isInit" class="router-view" v-bind:class="{'show-btn':showFooterBtn}" ></router-view>
+  <router-view v-if="isInit" class="router-view" ></router-view>
   <footerBtn v-if="showFooterBtn" />
   <back2top />
 </div>
@@ -14,6 +14,7 @@ import back2top from '@/components/back2top'
 import {footerBtn} from '@/components'
 import {isWeiXin, checkLogin} from '@/utils/common'
 import {getCookies, setCookies} from '@/utils/cookies'
+import VueCookie from "vue-cookie";
 import http from '@/http'
 
 export default {
@@ -35,7 +36,7 @@ export default {
     if (isWeiXin && getCookies('unionid') && !checkLogin()) {
       http('b2bm-supplier-api/purchaser/self/loginByUnionId', {unionId: getCookies('unionid')}, {showError: false}).then((token) => {
         if (token) {
-          setCookies('x-security-token', token)
+          VueCookie('x-security-token', token, 1)
           location.reload()
         }
       }).catch((res) => {
@@ -57,7 +58,7 @@ export default {
 @import '~vux/src/styles/reset.less';
 @import "./assets/css/global.less";
 
-#app /deep/ .show-btn{
-  padding-bottom:100px;
+#app.show-btn{
+  margin-bottom:100px;
 }
 </style>

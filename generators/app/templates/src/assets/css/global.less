@@ -113,7 +113,7 @@ table {
 }
 a,a:hover{color:#333;}
 /*全局重写*/
-body{ font-size: 14PX!important;color:#222222; -webkit-tap-highlight-color:rgba(0,0,0,0);}
+body{ font-size: 12PX!important;color:#222222; -webkit-tap-highlight-color:rgba(0,0,0,0);}
 .weui-cells{ font-size: 14PX!important; margin-top: 10px!important;}
 .weui-cell{ padding: 15PX!important;}
 .firstGroup .weui-cells{ margin-top: 0;}
@@ -136,7 +136,6 @@ body{ font-size: 14PX!important;color:#222222; -webkit-tap-highlight-color:rgba(
 .weui-cells-top .weui-cells:before{ border-top:0;}
 .weui-icon-success-circle, .weui-icon-success-no-circle{color:#FFB40C!important;}
 .vux-divider{color:#6b6a72!important;margin:0 auto!important;}
-.vux-divider:after, .vux-divider:before{width:88px!important;}
 .vux-tab-bar-inner{border-radius:2PX!important;}
 .weui-btn:after{border:none!important}
 .vux-header .vux-header-title{ color:#5f5f5f!important;}
@@ -166,7 +165,9 @@ body{ font-size: 14PX!important;color:#222222; -webkit-tap-highlight-color:rgba(
 
 /*字体大小*/
 .fs12{font-size:12PX;}
+.fs13{font-size:13PX;}
 .fs14{font-size:14PX;}
+.fs15{font-size:15PX;}
 .fs16{font-size:16PX;}
 
 /*0.5像素的线*/
@@ -177,4 +178,11 @@ body{ font-size: 14PX!important;color:#222222; -webkit-tap-highlight-color:rgba(
 .halfpx_top{
     background:linear-gradient(180deg,#ebebeb,#ebebeb,hsla(0,0%,90%,0)) 0 0 no-repeat;
     background-size:100% 1px;
+}
+/*兼容iPhoneX底部*/
+@supports (bottom: constant(safe-area-inset-bottom)) or (bottom: env(safe-area-inset-bottom)) {
+  body{
+    padding-bottom: calc(~"constant(safe-area-inset-bottom)");
+    padding-bottom: calc(~"env(safe-area-inset-bottom)");
+  }
 }
