@@ -95,28 +95,42 @@ Object.keys(proxyTable).forEach(function (context) {
 
   /*
   options.onProxyRes = (proxyRes, req, res) => {
-	const format = req.headers['x-format']
-	const mock = req.headers['x-mock']
+    const end = res.end;
+    const writeHead = res.writeHead;
+    let writeHeadArgs;
+    let body;
+    let buffer = new Buffer('');
 
-		  var body = new Buffer('')
-		  proxyRes.on('data', function (data) {
-			  body = Buffer.concat([body, data])
-		  })
-		  proxyRes.on('end', function () {
-			  body = body.toString()
-			  console.log('res from proxied server:', proxyRes.req.path)
+    proxyRes
+      .on('data', (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+      })
+      .on('end', () => {
+        if(proxyRes.headers['content-encoding']==='gzip'){
+          body = zlib.gunzipSync(buffer).toString('utf8');
+        }else{
+          body = buffer.toString();
+        }
+      });
 
-			  for (const [key, value] of Object.entries(proxyRes.headers)) {
-				  res.setHeader(key, value);
-			  }
+    // Defer write and writeHead
+    res.write = () => {};
+    res.writeHead = (...args) => { writeHeadArgs = args; };
 
-			  res.end(body)
-		  })
+    // Update user response at the end
+    res.end = () => {
+      const output = body; // some function to manipulate body
+      res.setHeader('content-length', output.length);
+      res.setHeader('content-encoding', '');
+      writeHead.apply(res, writeHeadArgs);
+
+      end.apply(res, [output]);
+    };
   }
 
   //允许修改返回值
   options['selfHandleResponse'] = true
-  */
+*/
   app.use(proxyMiddleware(options.filter || context, options))
 })
 
