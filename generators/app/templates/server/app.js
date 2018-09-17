@@ -180,6 +180,7 @@ function ssr (req, res, next) {
     }
   })()
 
+
   // 参考connect-history-api-fallback的匹配写法
   if (req.method !== 'GET') {
     return next()
