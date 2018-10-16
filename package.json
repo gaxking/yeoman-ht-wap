@@ -1,0 +1,17 @@
+{
+  "name": "ht-h5-cli",
+  "version": "1.4.0",
+  "description": "\"恒腾网络h5脚手架\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": "./yo/lib/cli.js",
+  "author": "gax",
+  "license": "MIT",
+  "dependencies": {
+    "del": "3.0.0",
+    "yeoman-generator": "3.1.1",
+    "yo": "2.0.5"
+  }
+}
